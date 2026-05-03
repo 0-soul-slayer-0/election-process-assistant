@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildAuthUrl, exchangeCodeForTokens, createCalendarEvent } from '@/lib/google-calendar';
+import { buildAuthUrl, createCalendarEvent } from '@/lib/google-calendar';
 import { calendarService } from '@/services/calendar.service';
 import type { ElectionEvent } from '@/types/election.types';
 
@@ -16,12 +16,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { action, accessToken } = body;
 
+    // Step 1: Return OAuth URL — no token needed
     if (action === 'get_auth_url') {
       const state = body.uid ?? 'anonymous';
       const authUrl = buildAuthUrl(state);
       return NextResponse.json({ authUrl });
     }
 
+    // All other actions require a connected access token
     if (!accessToken) {
       return NextResponse.json(
         { error: 'Authentication required. Please connect your Google Calendar first.' },
@@ -63,28 +65,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-// OAuth2 callback handler
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get('code');
-  const state = searchParams.get('state');
-
-  if (!code) {
-    return NextResponse.json({ error: 'Authorization code missing' }, { status: 400 });
-  }
-
-  try {
-    const tokens = await exchangeCodeForTokens(code);
-    // In production: store refresh token in Firestore linked to user uid (state param)
-    // For now: return tokens to client to store in sessionStorage
-    const redirectUrl = new URL('/', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000');
-    redirectUrl.searchParams.set('calendar_token', tokens.access_token);
-    redirectUrl.searchParams.set('calendar_uid', state ?? '');
-    return NextResponse.redirect(redirectUrl.toString());
-  } catch (error) {
-    console.error('[/api/calendar/callback] Error:', error);
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}?calendar_error=true`
-    );
-  }
-}
+// Unused export to satisfy Next.js route module requirements
+// The actual OAuth callback is at /api/calendar/callback/route.ts
+export { POST as default };
