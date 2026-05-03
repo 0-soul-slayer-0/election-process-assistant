@@ -223,11 +223,22 @@ export default function ChatPage() {
                 key={s}
                 className="sidebar-link"
                 style={{ width: '100%', marginBottom: '4px', background: isActive ? 'var(--color-primary-glow)' : 'transparent', color: isActive ? 'var(--color-primary-light)' : isDone ? 'var(--color-secondary)' : 'var(--color-text-secondary)' }}
-                onClick={() => setStage(s)}
+                onClick={() => {
+                  setStage(s);
+                  if (s === 'locate') {
+                    window.location.href = '/map';
+                  } else if (s === 'prepare' && stage !== 'prepare') {
+                    sendMessage('What documents do I need to prepare before voting? Give me a complete checklist.');
+                  } else if (s === 'vote' && stage !== 'vote') {
+                    sendMessage('Walk me through exactly how to vote on election day, step by step, including how to use the EVM machine.');
+                  }
+                }}
                 aria-current={isActive ? 'step' : undefined}
+                aria-label={s === 'locate' ? 'Open polling station map' : `Switch to ${STAGE_LABELS[s]} stage`}
               >
                 <span>{isDone ? '✅' : isActive ? '→' : `${i + 1}.`}</span>
                 <span>{STAGE_ICONS[s]} {STAGE_LABELS[s]}</span>
+                {s === 'locate' && <span style={{ fontSize: '0.6rem', marginLeft: 'auto', opacity: 0.5 }}>→ Map</span>}
               </button>
             );
           })}

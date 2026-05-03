@@ -133,8 +133,15 @@ export const SCENARIOS: ScenarioConfig[] = [
 
 export function classifyScenario(userMessage: string): ScenarioType {
   const lower = userMessage.toLowerCase();
-  for (const scenario of SCENARIOS) {
-    if (scenario.type === 'general') continue;
+
+  // Priority: check multi-word / longer-keyword scenarios first to avoid false positives
+  const prioritized = [...SCENARIOS].filter(s => s.type !== 'general').sort((a, b) => {
+    const maxA = Math.max(...a.intentKeywords.map(k => k.length));
+    const maxB = Math.max(...b.intentKeywords.map(k => k.length));
+    return maxB - maxA; // longer keywords = more specific = higher priority
+  });
+
+  for (const scenario of prioritized) {
     const matched = scenario.intentKeywords.some((kw) => lower.includes(kw));
     if (matched) return scenario.type;
   }
