@@ -1,5 +1,11 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
+
+export const viewport: Viewport = {
+  themeColor: '#050b18',
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: 'VoteSmart — The Intelligent Election Companion',
@@ -13,8 +19,6 @@ export const metadata: Metadata = {
     locale: 'en_IN',
   },
   robots: 'index, follow',
-  themeColor: '#050b18',
-  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({

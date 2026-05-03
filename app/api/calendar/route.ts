@@ -65,6 +65,3 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-// Unused export to satisfy Next.js route module requirements
-// The actual OAuth callback is at /api/calendar/callback/route.ts
-export { POST as default };
