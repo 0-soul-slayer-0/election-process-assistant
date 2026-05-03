@@ -1,5 +1,5 @@
-import type { LatLng, PollingStation, TravelEstimate } from '@/types/location.types';
-import type { TravelMode } from '@/types/election.types';
+import type { LatLng, PollingStation } from '@/types/location.types';
+import type { TravelMode, TravelEstimate } from '@/types/election.types';
 import type { UserProfile } from '@/types/user.types';
 
 // Mock polling station data — in production, this comes from ECI API or a database

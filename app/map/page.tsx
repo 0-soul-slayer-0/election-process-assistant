@@ -1,3 +1,4 @@
+/// <reference types="@types/google.maps" />
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -9,6 +10,13 @@ import type { UserProfile } from '@/types/user.types';
 import type { PollingStation } from '@/types/location.types';
 
 const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!;
+
+// Augment window with google maps global
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
 
 export default function MapPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -41,9 +49,8 @@ export default function MapPage() {
   }, []);
 
   useEffect(() => {
-    if (!mapLoaded || !userPos || stations.length === 0) return;
-    const g = (window as unknown as { google: typeof google }).google;
-    if (!g) return;
+    if (!mapLoaded || !userPos || stations.length === 0 || !window.google) return;
+    const g = window.google;
     const map = new g.maps.Map(document.getElementById('map-canvas')!, {
       center: userPos, zoom: 14, mapTypeControl: false, streetViewControl: false,
       styles: [
@@ -53,9 +60,16 @@ export default function MapPage() {
         { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1a2a50' }] },
       ],
     });
-    new g.maps.Marker({ position: userPos, map, title: 'Your Location', icon: { path: g.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#4f7bff', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+    new g.maps.Marker({
+      position: userPos, map, title: 'Your Location',
+      icon: { path: g.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#4f7bff', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+    });
     stations.forEach((station, i) => {
-      const marker = new g.maps.Marker({ position: station.location, map, title: station.name, label: { text: `P${i + 1}`, color: 'white', fontWeight: 'bold', fontSize: '12px' }, icon: { path: g.maps.SymbolPath.MAP_PIN, scale: 14, fillColor: '#00d4aa', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+      const marker = new g.maps.Marker({
+        position: station.location, map, title: station.name,
+        label: { text: `P${i + 1}`, color: 'white', fontWeight: 'bold', fontSize: '12px' },
+        icon: { path: g.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 8, fillColor: '#00d4aa', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+      });
       marker.addListener('click', () => setSelected(station));
     });
   }, [mapLoaded, userPos, stations]);
@@ -72,16 +86,16 @@ export default function MapPage() {
         if (data.stations[0]) setSelected(data.stations[0]);
         setLoading(false);
       },
-      () => { setGeoError('Location denied. Enter your address below.'); setLoading(false); }
+      () => { setGeoError('Location denied. Please enter your address below.'); setLoading(false); }
     );
   }, [profile]);
 
   const searchAddress = async () => {
-    if (!address.trim() || !mapLoaded) return;
+    if (!address.trim() || !mapLoaded || !window.google) return;
     setLoading(true);
-    const g = (window as unknown as { google: typeof google }).google;
-    new g.maps.Geocoder().geocode({ address: `${address}, India` }, async (results, status) => {
-      if (status === 'OK' && results?.[0]) {
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ address: `${address}, India` }).then(async ({ results }) => {
+      if (results?.[0]) {
         const loc = results[0].geometry.location;
         const lat = loc.lat(), lng = loc.lng();
         setUserPos({ lat, lng });
@@ -90,11 +104,16 @@ export default function MapPage() {
         setStations(data.stations);
         if (data.stations[0]) setSelected(data.stations[0]);
       }
-      setLoading(false);
-    });
+    }).catch(() => {
+      setGeoError('Address not found. Please try a more specific address.');
+    }).finally(() => setLoading(false));
   };
 
-  if (!profile) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}><p style={{ color: 'var(--color-text-secondary)' }}>Loading...</p></div>;
+  if (!profile) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <p style={{ color: 'var(--color-text-secondary)' }}>Loading...</p>
+    </div>
+  );
 
   return (
     <main id="main-content" style={{ minHeight: '100vh', padding: '32px 20px', maxWidth: '900px', margin: '0 auto' }}>

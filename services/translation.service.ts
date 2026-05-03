@@ -84,9 +84,9 @@ export class TranslationService {
 
   private restoreTerms(text: string, replacements: Map<string, string>): string {
     let result = text;
-    for (const [placeholder, term] of replacements) {
-      result = result.replaceAll(placeholder, term);
-    }
+    Array.from(replacements.entries()).forEach(([placeholder, term]) => {
+      result = result.split(placeholder).join(term);
+    });
     return result;
   }
 }

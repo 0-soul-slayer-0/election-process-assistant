@@ -171,9 +171,11 @@ function parseAIResponse(text: string, fallbackStage: JourneyStage): AIResponse 
     const parsed = JSON.parse(cleaned) as Partial<AIResponse>;
 
     // Validate and ensure required fields
-    const followUpChips = Array.isArray(parsed.followUpChips) && parsed.followUpChips.length === 3
-      ? (parsed.followUpChips as [string, string, string])
-      : ['Tell me more', 'What should I do next?', 'I need help'];
+    const rawChips = parsed.followUpChips;
+    const followUpChips: [string, string, string] =
+      Array.isArray(rawChips) && rawChips.length >= 3
+        ? [String(rawChips[0]), String(rawChips[1]), String(rawChips[2])]
+        : ['Tell me more', 'What should I do next?', 'I need help with voting'];
 
     return {
       stage: parsed.stage ?? fallbackStage,
@@ -193,7 +195,7 @@ function parseAIResponse(text: string, fallbackStage: JourneyStage): AIResponse 
     return {
       stage: fallbackStage,
       message: text.length > 0 ? text : 'I encountered an issue processing your request. Please try again.',
-      followUpChips: ['How do I register?', 'Find my polling station', 'What ID do I need?'],
+      followUpChips: ['How do I register?', 'Find my polling station', 'What ID do I need?'] as [string, string, string],
       pollingStationSuggestion: false,
       calendarPrompt: false,
       readinessScoreDelta: 0,
